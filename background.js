@@ -2,27 +2,10 @@
 //
 // ollama は Origin ヘッダを検査しており、content script からの fetch は
 // ページの Origin になって弾かれる。そのため翻訳リクエストは必ずここ
-// (moz-extension:// Origin) から送る。
+// (moz-extension:// Origin) から送る。ollama 側で
+// OLLAMA_ORIGINS に moz-extension://* を許可しておく必要がある。
 
 const REQUEST_TIMEOUT_MS = 120_000;
-const EXTENSION_BASE_URL = browser.runtime.getURL("");
-
-// ollama の OLLAMA_ORIGINS に moz-extension://* が含まれていない環境
-// (少なくとも v0.40.14 の既定) では Origin: moz-extension://... が 403 になる。
-// この拡張自身が送る翻訳リクエストに限って Origin ヘッダを外し、
-// curl と同じ「Origin なし」のリクエストにする。
-// 対象はホスト権限を持つ URL のみ (既定は http://ollama-host/*)。
-browser.webRequest.onBeforeSendHeaders.addListener(
-  (details) => {
-    const fromSelf = (details.originUrl ?? details.documentUrl ?? "").startsWith(EXTENSION_BASE_URL);
-    if (!fromSelf || !details.url.endsWith("/v1/chat/completions")) return {};
-    return {
-      requestHeaders: details.requestHeaders.filter((h) => h.name.toLowerCase() !== "origin"),
-    };
-  },
-  { urls: ["http://*/*", "https://*/*"], types: ["xmlhttprequest"] },
-  ["blocking", "requestHeaders"],
-);
 
 // 翻訳の向き。実行時 (メニュー項目 / ショートカット) で選ぶ。
 const DIRECTIONS = Object.freeze({

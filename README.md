@@ -51,6 +51,10 @@ Alt+英字は Firefox のメニューバー (Alt+T =「ツール」など) と�
 - ollama が Tailscale 経由で `http://ollama-host:11434` で到達できること
 - モデル `hf.co/pfnet/plamo-3-translate-2b-GGUF:Q4_K_M` が pull 済みであること
   (`ollama pull hf.co/pfnet/plamo-3-translate-2b-GGUF:Q4_K_M`)
+- 環境変数 `OLLAMA_ORIGINS="moz-extension://*"` を設定していること。
+  既定では `Origin: moz-extension://...` のリクエストが 403 になる。
+  systemd で動かしている場合は drop-in (`systemctl edit ollama`) に
+  `Environment="OLLAMA_ORIGINS=moz-extension://*"` を書いて再起動する
 - ホスト名は `ollama-host` (または IP) を使う。ollama は Host ヘッダを検査するため、
   `ollama-host.<tailnet>.ts.net` のような FQDN では 403 になる
 - OpenAI 互換 API (`/v1/chat/completions`) を非ストリーミングで使う。
@@ -66,15 +70,8 @@ Firefox の Manifest V3 は既定の CSP に `upgrade-insecure-requests` を含�
 ### Origin ヘッダについて
 
 ollama は Origin ヘッダも検査します。content script から fetch するとページの
-Origin になって弾かれるため、翻訳リクエストは background script から送っています。
-
-さらに、ollama v0.40.14 の既定設定では `Origin: moz-extension://...` も 403 に
-なることを確認しています。そのため background では `webRequest` で
-**この拡張自身が送る `/v1/chat/completions` へのリクエストに限り Origin ヘッダを除去**
-しています (curl と同じ Origin 無しのリクエストになる)。
-
-ollama 側で `OLLAMA_ORIGINS=moz-extension://*` を設定すれば、この回避策が無くても
-通るはずです。
+Origin になって弾かれるため、翻訳リクエストは background script から送っています
+(Origin は `moz-extension://<UUID>` になるので、上記の `OLLAMA_ORIGINS` で許可する)。
 
 ## ファイル構成
 
