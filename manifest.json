@@ -33,13 +33,13 @@
   "commands": {
     "translate-to-ja": {
       "suggested_key": {
-        "default": "Alt+T"
+        "default": "Ctrl+Alt+J"
       },
       "description": "選択テキストを日本語へ翻訳"
     },
     "translate-from-ja": {
       "suggested_key": {
-        "default": "Alt+Shift+T"
+        "default": "Ctrl+Alt+E"
       },
       "description": "選択テキストを日本語から設定言語へ翻訳"
     }
