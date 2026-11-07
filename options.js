@@ -35,7 +35,7 @@ form.addEventListener("submit", async (e) => {
     return;
   }
 
-  // 既定 (http://ollama-host/*) 以外のホストを使う場合はホスト権限を要求する。
+  // 既定 (localhost) 以外のホストを使う場合はホスト権限を要求する。
   // permissions.request はユーザー操作の直後に同期的に呼ぶ必要があるので await より前に呼ぶ。
   // match pattern にはポートを含めない (Firefox はポートを無視して照合する)。
   const originPattern = `${url.protocol}//${url.hostname}/*`;

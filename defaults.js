@@ -1,6 +1,6 @@
 // background と options で共有する既定値
 const PLAMO_DEFAULTS = Object.freeze({
-  endpoint: "http://ollama-host:11434",
+  endpoint: "http://localhost:11434",
   model: "hf.co/pfnet/plamo-3-translate-2b-GGUF:Q4_K_M",
   // 原文が日本語のときの翻訳先。日本語以外の原文は常に日本語へ翻訳する。
   fromJaLang: "en",
