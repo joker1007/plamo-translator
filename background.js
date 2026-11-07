@@ -4,7 +4,6 @@
 // ページの Origin になって弾かれる。そのため翻訳リクエストは必ずここ
 // (moz-extension:// Origin) から送る。
 
-const MENU_ID = "plamo-translate";
 const REQUEST_TIMEOUT_MS = 120_000;
 const EXTENSION_BASE_URL = browser.runtime.getURL("");
 
@@ -25,33 +24,60 @@ browser.webRequest.onBeforeSendHeaders.addListener(
   ["blocking", "requestHeaders"],
 );
 
-browser.runtime.onInstalled.addListener(() => {
+// 翻訳の向き。実行時 (メニュー項目 / ショートカット) で選ぶ。
+const DIRECTIONS = Object.freeze({
+  "to-ja": { menuId: "plamo-to-ja", command: "translate-to-ja" },
+  "from-ja": { menuId: "plamo-from-ja", command: "translate-from-ja" },
+});
+
+const LANG_NAMES = {
+  en: "英語", "zh-hans": "中国語 (簡体字)", "zh-hant": "中国語 (繁体字)", ko: "韓国語",
+  fr: "フランス語", de: "ドイツ語", es: "スペイン語", it: "イタリア語", pt: "ポルトガル語",
+  ru: "ロシア語", vi: "ベトナム語", th: "タイ語", id: "インドネシア語", "ja(easy)": "やさしい日本語",
+};
+
+function langName(code) {
+  return LANG_NAMES[code] ?? code;
+}
+
+// 複数項目は Firefox が拡張名のサブメニューにまとめて表示する。
+async function setupMenus() {
+  const { fromJaLang } = await loadSettings();
+  await browser.contextMenus.removeAll();
   browser.contextMenus.create({
-    id: MENU_ID,
-    title: "PLaMo で翻訳",
+    id: DIRECTIONS["to-ja"].menuId,
+    title: "日本語へ翻訳",
     contexts: ["selection"],
   });
+  browser.contextMenus.create({
+    id: DIRECTIONS["from-ja"].menuId,
+    title: `日本語から${langName(fromJaLang)}へ翻訳`,
+    contexts: ["selection"],
+  });
+}
+
+browser.runtime.onInstalled.addListener(setupMenus);
+browser.runtime.onStartup.addListener(setupMenus);
+browser.storage.onChanged.addListener((changes, area) => {
+  if (area === "local" && changes.fromJaLang) setupMenus();
 });
 
 browser.contextMenus.onClicked.addListener((info, tab) => {
-  if (info.menuItemId !== MENU_ID || !tab) return;
-  startTranslation(tab, info.frameId ?? 0, info.selectionText);
+  const direction = Object.keys(DIRECTIONS).find((d) => DIRECTIONS[d].menuId === info.menuItemId);
+  if (!direction || !tab) return;
+  startTranslation(tab, info.frameId ?? 0, info.selectionText, direction);
 });
 
-browser.commands.onCommand.addListener((command, tab) => {
-  if (command !== "translate-selection") return;
-  if (tab) {
-    startTranslation(tab, 0, null);
-  } else {
-    browser.tabs.query({ active: true, currentWindow: true }).then(([t]) => {
-      if (t) startTranslation(t, 0, null);
-    });
-  }
+browser.commands.onCommand.addListener(async (command, tab) => {
+  const direction = Object.keys(DIRECTIONS).find((d) => DIRECTIONS[d].command === command);
+  if (!direction) return;
+  const target = tab ?? (await browser.tabs.query({ active: true, currentWindow: true }))[0];
+  if (target) startTranslation(target, 0, null, direction);
 });
 
 // content script を注入し、翻訳開始を指示する。
 // content script はオーバーレイを出してから runtime.sendMessage で翻訳を依頼してくる。
-async function startTranslation(tab, frameId, selectionText) {
+async function startTranslation(tab, frameId, selectionText, direction) {
   try {
     await browser.scripting.executeScript({
       target: { tabId: tab.id, frameIds: [frameId] },
@@ -59,7 +85,7 @@ async function startTranslation(tab, frameId, selectionText) {
     });
     await browser.tabs.sendMessage(
       tab.id,
-      { type: "plamo:start", selectionText },
+      { type: "plamo:start", selectionText, direction },
       { frameId },
     );
   } catch (e) {
@@ -70,7 +96,7 @@ async function startTranslation(tab, frameId, selectionText) {
 
 browser.runtime.onMessage.addListener((message) => {
   if (message?.type === "plamo:translate") {
-    return translate(message.text);
+    return translate(message.text, message.direction);
   }
   return undefined;
 });
@@ -80,34 +106,22 @@ async function loadSettings() {
   return { ...PLAMO_DEFAULTS, ...stored };
 }
 
-// 原文が日本語かどうかの判定。
-// 漢字は中国語と共通なので、かなを含むことを必須条件にする。
-// そのうえで日本語の文字 (かな・漢字) が全文字の 30% 以上なら日本語とみなす
-// (カタカナ語を少し含む英文などを日本語扱いしないため)。
-// かなを含まない漢字だけの短文は日本語以外と判定され、日本語へ翻訳される。
-function isJapanese(text) {
-  const kana = text.match(/[\p{Script=Hiragana}\p{Script=Katakana}]/gu)?.length ?? 0;
-  if (kana === 0) return false;
-  const han = text.match(/\p{Script=Han}/gu)?.length ?? 0;
-  const letters = text.match(/\p{L}/gu)?.length ?? 0;
-  return (kana + han) / letters >= 0.3;
-}
-
-function resolveTargetLang(text, settings) {
-  if (!isJapanese(text)) return "ja";
-  return PLAMO_LANG_CODE_RE.test(settings.fromJaLang) ? settings.fromJaLang : PLAMO_DEFAULTS.fromJaLang;
-}
-
 // 戻り値: { ok: true, text, targetLang } | { ok: false, error }
-// 原文の言語はモデルが自動判別するので source_lang は渡さない。
-async function translate(text) {
+// to-ja: 原文の言語はモデルに自動判別させるので source_lang は渡さない。
+// from-ja: 原文が日本語だと分かっているので source_lang=ja を明示する。
+async function translate(text, direction) {
+  if (!(direction in DIRECTIONS)) return { ok: false, error: `不明な翻訳方向: ${direction}` };
   const settings = await loadSettings();
-  const targetLang = resolveTargetLang(text, settings);
+  const fromJaLang = PLAMO_LANG_CODE_RE.test(settings.fromJaLang) ? settings.fromJaLang : PLAMO_DEFAULTS.fromJaLang;
+  const targetLang = direction === "to-ja" ? "ja" : fromJaLang;
+  const settingsBlock = direction === "to-ja"
+    ? `[plamo-translate]\ntarget_lang=ja`
+    : `[plamo-translate]\ntarget_lang=${targetLang}\nsource_lang=ja`;
   const url = settings.endpoint.replace(/\/+$/, "") + "/v1/chat/completions";
   const body = {
     model: settings.model,
     messages: [
-      { role: "system", content: `[plamo-translate]\ntarget_lang=${targetLang}` },
+      { role: "system", content: settingsBlock },
       { role: "user", content: text },
     ],
     temperature: 0,

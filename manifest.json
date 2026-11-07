@@ -10,15 +10,38 @@
     }
   },
   "background": {
-    "scripts": ["defaults.js", "background.js"]
+    "scripts": [
+      "defaults.js",
+      "background.js"
+    ]
   },
-  "permissions": ["contextMenus", "storage", "activeTab", "scripting", "webRequest", "webRequestBlocking"],
-  "host_permissions": ["http://ollama-host/*"],
-  "optional_host_permissions": ["http://*/*", "https://*/*"],
+  "permissions": [
+    "contextMenus",
+    "storage",
+    "activeTab",
+    "scripting",
+    "webRequest",
+    "webRequestBlocking"
+  ],
+  "host_permissions": [
+    "http://ollama-host/*"
+  ],
+  "optional_host_permissions": [
+    "http://*/*",
+    "https://*/*"
+  ],
   "commands": {
-    "translate-selection": {
-      "suggested_key": { "default": "Alt+T" },
-      "description": "選択テキストを PLaMo で翻訳"
+    "translate-to-ja": {
+      "suggested_key": {
+        "default": "Alt+T"
+      },
+      "description": "選択テキストを日本語へ翻訳"
+    },
+    "translate-from-ja": {
+      "suggested_key": {
+        "default": "Alt+Shift+T"
+      },
+      "description": "選択テキストを日本語から設定言語へ翻訳"
     }
   },
   "options_ui": {

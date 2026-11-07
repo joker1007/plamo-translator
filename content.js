@@ -160,7 +160,7 @@
     position(rect); // 内容でサイズが変わるので再配置
   }
 
-  async function run(text) {
+  async function run(text, direction) {
     const rect = selectionRect();
     openOverlay(rect);
     const mySeq = ++requestSeq;
@@ -173,7 +173,7 @@
     setContent("翻訳中...", "loading", rect);
     let res;
     try {
-      res = await browser.runtime.sendMessage({ type: "plamo:translate", text });
+      res = await browser.runtime.sendMessage({ type: "plamo:translate", text, direction });
     } catch (e) {
       res = { ok: false, error: `拡張機能との通信に失敗しました: ${e.message}` };
     }
@@ -191,7 +191,7 @@
     // コンテキストメニュー経由なら selectionText が来るが、改行が潰れているので
     // ページ側で取れる場合はそちらを優先する
     const text = selectedText() || message.selectionText || "";
-    run(text);
+    run(text, message.direction);
     return undefined;
   });
 })();
