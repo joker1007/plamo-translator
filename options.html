@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <title>PLaMo Translator 設定</title>
+  <style>
+    body { font: 14px/1.6 system-ui, sans-serif; margin: 16px; min-width: 420px; }
+    label { display: block; margin-bottom: 12px; }
+    label span { display: block; font-weight: 600; margin-bottom: 2px; }
+    input[type=text], input[type=url], select { width: 100%; box-sizing: border-box; padding: 4px 6px; }
+    .hint { font-size: 12px; color: #6e7781; }
+    .actions { display: flex; gap: 8px; align-items: center; }
+    #status { font-size: 12px; }
+    #status.error { color: #cf222e; }
+  </style>
+</head>
+<body>
+  <form id="form">
+    <label>
+      <span>エンドポイント URL</span>
+      <input type="url" id="endpoint" required>
+      <span class="hint">ollama のベース URL (/v1/chat/completions は自動付与)。既定: http://ollama-host:11434</span>
+    </label>
+    <label>
+      <span>モデル名</span>
+      <input type="text" id="model" required>
+    </label>
+    <label>
+      <span>翻訳先言語</span>
+      <select id="targetLang">
+        <option value="ja">日本語 (ja)</option>
+        <option value="en">英語 (en)</option>
+      </select>
+    </label>
+    <div class="actions">
+      <button type="submit">保存</button>
+      <button type="button" id="reset">既定値に戻す</button>
+      <span id="status"></span>
+    </div>
+  </form>
+  <script src="defaults.js"></script>
+  <script src="options.js"></script>
+</body>
+</html>

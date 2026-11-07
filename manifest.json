@@ -1,0 +1,28 @@
+{
+  "manifest_version": 3,
+  "name": "PLaMo Translator",
+  "version": "0.1.0",
+  "description": "選択テキストをローカルの ollama (PLaMo 3 Translate) で翻訳してオーバーレイ表示します。",
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "plamo-translator@joker1007.local",
+      "strict_min_version": "128.0"
+    }
+  },
+  "background": {
+    "scripts": ["defaults.js", "background.js"]
+  },
+  "permissions": ["contextMenus", "storage", "activeTab", "scripting", "webRequest", "webRequestBlocking"],
+  "host_permissions": ["http://ollama-host/*"],
+  "optional_host_permissions": ["http://*/*", "https://*/*"],
+  "commands": {
+    "translate-selection": {
+      "suggested_key": { "default": "Alt+T" },
+      "description": "選択テキストを PLaMo で翻訳"
+    }
+  },
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": false
+  }
+}
