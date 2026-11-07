@@ -32,6 +32,20 @@ Alt+英字は Firefox のメニューバー (Alt+T =「ツール」など) と�
 一時的なアドオンは Firefox を再起動すると消えます。コードを変更したら
 `about:debugging` の「再読み込み」で反映できます。
 
+## xpi の作成
+
+```sh
+make        # dist/plamo-translator-<version>.xpi を生成
+make lint   # manifest.json の JSON 検証と JS の構文チェック (node が必要)
+make clean  # dist/ を削除
+```
+
+`zip` と `jq` が必要です。拡張にファイルを追加したら `Makefile` の `SRCS` にも足してください。
+
+生成した xpi は署名されていないため、通常版の Firefox には恒久的にインストールできません。
+Developer Edition / Nightly で `xpinstall.signatures.required` を `false` にするか、
+AMO で署名 (unlisted でも可) する必要があります。
+
 ## 設定
 
 `about:addons` → PLaMo Translator →「設定」で変更できます (`storage.local` に保存)。
