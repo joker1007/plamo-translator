@@ -56,6 +56,13 @@ Alt+英字は Firefox のメニューバー (Alt+T =「ツール」など) と�
 - OpenAI 互換 API (`/v1/chat/completions`) を非ストリーミングで使う。
   system メッセージに `[plamo-translate]\ntarget_lang=<言語コード>` (日本語から翻訳する場合は `source_lang=ja` も) を渡す
 
+### http:// への接続について
+
+Firefox の Manifest V3 は既定の CSP に `upgrade-insecure-requests` を含むため、
+そのままだと `http://ollama-host:11434` への fetch が `https://` に昇格されて
+`NetworkError` になります。`manifest.json` の `content_security_policy.extension_pages` で
+`upgrade-insecure-requests` を含まない CSP (`script-src 'self'`) を明示しています。
+
 ### Origin ヘッダについて
 
 ollama は Origin ヘッダも検査します。content script から fetch するとページの

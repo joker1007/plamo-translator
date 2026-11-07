@@ -30,6 +30,9 @@
     "http://*/*",
     "https://*/*"
   ],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'"
+  },
   "commands": {
     "translate-to-ja": {
       "suggested_key": {
