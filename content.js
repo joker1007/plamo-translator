@@ -58,6 +58,7 @@
 
   let host = null;
   let body = null;
+  let label = null;
   let requestSeq = 0;
 
   function selectionRect() {
@@ -86,6 +87,7 @@
     host.remove();
     host = null;
     body = null;
+    label = null;
     requestSeq++; // 進行中のリクエスト結果を捨てる
     document.removeEventListener("keydown", onKeyDown, true);
     document.removeEventListener("mousedown", onMouseDown, true);
@@ -114,7 +116,7 @@
 
     const header = document.createElement("div");
     header.className = "header";
-    const label = document.createElement("span");
+    label = document.createElement("span");
     label.textContent = "PLaMo 翻訳";
     const closeBtn = document.createElement("button");
     closeBtn.className = "close";
@@ -177,6 +179,7 @@
     }
     if (mySeq !== requestSeq) return; // 閉じられた or 新しい翻訳が始まった
     if (res?.ok) {
+      if (label) label.textContent = `PLaMo 翻訳 → ${res.targetLang}`;
       setContent(res.text, "result", rect);
     } else {
       setContent(`エラー: ${res?.error ?? "不明なエラー"}`, "error", rect);

@@ -80,14 +80,34 @@ async function loadSettings() {
   return { ...PLAMO_DEFAULTS, ...stored };
 }
 
-// 戻り値: { ok: true, text } | { ok: false, error }
+// 原文が日本語かどうかの判定。
+// 漢字は中国語と共通なので、かなを含むことを必須条件にする。
+// そのうえで日本語の文字 (かな・漢字) が全文字の 30% 以上なら日本語とみなす
+// (カタカナ語を少し含む英文などを日本語扱いしないため)。
+// かなを含まない漢字だけの短文は日本語以外と判定され、日本語へ翻訳される。
+function isJapanese(text) {
+  const kana = text.match(/[\p{Script=Hiragana}\p{Script=Katakana}]/gu)?.length ?? 0;
+  if (kana === 0) return false;
+  const han = text.match(/\p{Script=Han}/gu)?.length ?? 0;
+  const letters = text.match(/\p{L}/gu)?.length ?? 0;
+  return (kana + han) / letters >= 0.3;
+}
+
+function resolveTargetLang(text, settings) {
+  if (!isJapanese(text)) return "ja";
+  return PLAMO_LANG_CODE_RE.test(settings.fromJaLang) ? settings.fromJaLang : PLAMO_DEFAULTS.fromJaLang;
+}
+
+// 戻り値: { ok: true, text, targetLang } | { ok: false, error }
+// 原文の言語はモデルが自動判別するので source_lang は渡さない。
 async function translate(text) {
   const settings = await loadSettings();
+  const targetLang = resolveTargetLang(text, settings);
   const url = settings.endpoint.replace(/\/+$/, "") + "/v1/chat/completions";
   const body = {
     model: settings.model,
     messages: [
-      { role: "system", content: `[plamo-translate]\ntarget_lang=${settings.targetLang}` },
+      { role: "system", content: `[plamo-translate]\ntarget_lang=${targetLang}` },
       { role: "user", content: text },
     ],
     temperature: 0,
@@ -114,7 +134,7 @@ async function translate(text) {
     if (typeof content !== "string") {
       return { ok: false, error: "レスポンスに choices[0].message.content がありません" };
     }
-    return { ok: true, text: content.trim() };
+    return { ok: true, text: content.trim(), targetLang };
   } catch (e) {
     if (e.name === "AbortError") {
       return { ok: false, error: `タイムアウトしました (${REQUEST_TIMEOUT_MS / 1000} 秒)` };
