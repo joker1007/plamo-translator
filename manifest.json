@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "PLaMo Translator",
   "version": "0.1.0",
-  "description": "選択テキストをローカルの ollama (PLaMo 3 Translate) で翻訳してオーバーレイ表示します。",
+  "description": "選択テキストやサイドバーに入力したテキストをローカルの ollama (PLaMo 3 Translate) で翻訳します。",
   "browser_specific_settings": {
     "gecko": {
       "id": "plamo-translator@joker1007.local",
@@ -14,6 +14,11 @@
       "defaults.js",
       "background.js"
     ]
+  },
+  "sidebar_action": {
+    "default_title": "PLaMo 翻訳",
+    "default_panel": "sidebar.html",
+    "open_at_install": false
   },
   "permissions": [
     "contextMenus",
@@ -44,6 +49,12 @@
         "default": "Ctrl+Alt+E"
       },
       "description": "選択テキストを日本語から設定言語へ翻訳"
+    },
+    "_execute_sidebar_action": {
+      "suggested_key": {
+        "default": "Ctrl+Alt+S"
+      },
+      "description": "翻訳サイドバーを開く / 閉じる"
     }
   },
   "options_ui": {

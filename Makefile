@@ -4,7 +4,7 @@ DIST    := dist
 XPI     := $(DIST)/$(NAME)-$(VERSION).xpi
 
 # 拡張に含めるファイル。追加したらここにも足す。
-SRCS := manifest.json background.js content.js defaults.js options.html options.js
+SRCS := manifest.json background.js content.js defaults.js options.html options.js sidebar.html sidebar.js
 
 .PHONY: all xpi lint clean
 
